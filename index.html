@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>صندوق الأدوات | أكثر من 50 أداة</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Cairo', sans-serif; }
+    .glass { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); }
+    .tool-card { transition: .2s; }
+    .tool-card:hover { transform: translateY(-3px); }
+    .hidden-view { display: none; }
+    input, select, textarea { outline: none; }
+    .calc-btn { min-height: 48px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+<header class="sticky top-0 z-50 bg-slate-950/90 backdrop-blur border-b border-slate-800">
+  <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+    <button onclick="showHome()" class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-500 flex items-center justify-center text-xl">🧰</div>
+      <div class="text-right">
+        <h1 class="font-extrabold text-lg leading-tight">صندوق الأدوات</h1>
+        <p class="text-xs text-slate-400">أكثر من 50 أداة سريعة</p>
+      </div>
+    </button>
+    <div class="flex items-center gap-2">
+      <input id="search" type="search" placeholder="ابحث..." class="w-28 sm:w-48 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm" oninput="filterTools(this.value)">
+      <button id="acc-btn" onclick="toggleAcc()" class="bg-violet-600 hover:bg-violet-500 px-3 py-2 rounded-xl text-sm font-bold">حساب</button>
+    </div>
+  </div>
+</header>
+<div id="acc-panel" class="hidden-view max-w-6xl mx-auto px-4 pt-4">
+  <div class="glass rounded-2xl p-4"><div id="acc-out"></div></div>
+</div>
+<main class="max-w-6xl mx-auto px-4 py-8">
+  <section id="home">
+    <div class="text-center mb-8">
+      <h2 class="text-3xl md:text-5xl font-extrabold mb-3 bg-gradient-to-l from-cyan-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">كل الأدوات اللي محتاجها</h2>
+      <p class="text-slate-400">حاسبات • كتابة • وقت • تحويلات • دراسة • ألوان • عشوائي</p>
+    </div>
+    <div id="cats" class="flex flex-wrap gap-2 justify-center mb-6"></div>
+    <div id="tools-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+  </section>
+  <section id="tool-view" class="hidden-view">
+    <button onclick="showHome()" class="mb-5 text-sm text-slate-400 hover:text-white">← رجوع</button>
+    <div id="tool-content" class="glass rounded-3xl p-5 md:p-8"></div>
+  </section>
+</main>
+<footer class="text-center text-slate-500 text-sm py-10">كل الحسابات بتتم على جهازك</footer>
+<script>
+const T=[
+{id:'calc',c:'حساب',i:'🧮',n:'حاسبة',d:'جمع وطرح وضرب'},
+{id:'sci',c:'حساب',i:'🔬',n:'حاسبة علمية',d:'أس وجذر'},
+{id:'percent',c:'حساب',i:'٪',n:'حاسبة نسب',d:'خصم وزيادة'},
+{id:'grade',c:'دراسة',i:'🎓',n:'حاسبة درجات',d:'النسبة المئوية'},
+{id:'gpa',c:'دراسة',i:'📊',n:'مجموع الثانوية',d:'من 320 للكل'},
+{id:'zodiac',c:'أبراج',i:'♈',n:'اعرف برجك',d:'من تاريخ الميلاد'},
+{id:'luck',c:'أبراج',i:'✨',n:'حظك اليوم',d:'حسب برجك'},
+{id:'signs',c:'أبراج',i:'🌌',n:'كل الأبراج',d:'صفات كل برج'},
+{id:'avg',c:'حساب',i:'📈',n:'المتوسط',d:'متوسط أرقام'},
+{id:'interest',c:'حساب',i:'💰',n:'فائدة بسيطة',d:'حساب الفائدة'},
+{id:'split',c:'حساب',i:'🧾',n:'تقسيم فاتورة',d:'على عدد الأشخاص'},
+{id:'bmi',c:'صحة',i:'⚖️',n:'مؤشر الكتلة',d:'BMI تقريبي'},
+{id:'water',c:'صحة',i:'💧',n:'حاسبة الماء',d:'كمية الشرب'},
+{id:'age',c:'وقت',i:'🎂',n:'حاسبة العمر',d:'سنة وشهر'},
+{id:'date',c:'وقت',i:'📅',n:'فرق التواريخ',d:'كام يوم'},
+{id:'week',c:'وقت',i:'🗓️',n:'رقم الأسبوع',d:'في السنة'},
+{id:'countdown',c:'وقت',i:'⏳',n:'عد تنازلي',d:'لتاريخ معين'},
+{id:'timer',c:'وقت',i:'⏱️',n:'بومودورو',d:'25 دقيقة'},
+{id:'stopwatch',c:'وقت',i:'⏲️',n:'ساعة إيقاف',d:'عد تصاعدي'},
+{id:'exam',c:'دراسة',i:'📝',n:'مؤقت امتحان',d:'ساعة أو ساعتين'},
+{id:'world',c:'وقت',i:'🌍',n:'توقيت مدن',d:'القاهرة ودبي'},
+{id:'pass',c:'حماية',i:'🔐',n:'مولد كلمات مرور',d:'كلمة قوية'},
+{id:'pin',c:'حماية',i:'🔢',n:'مولد رقم سري',d:'PIN'},
+{id:'uuid',c:'حماية',i:'🪪',n:'معرف عشوائي',d:'ID فريد'},
+{id:'units',c:'تحويل',i:'📐',n:'وحدات قياس',d:'طول ووزن'},
+{id:'temp',c:'تحويل',i:'🌡️',n:'تحويل حرارة',d:'مئوية وفهرنهايت'},
+{id:'data',c:'تحويل',i:'💾',n:'حجم الملفات',d:'KB MB GB'},
+{id:'speed',c:'تحويل',i:'🚗',n:'سرعة ومسافة',d:'زمن الرحلة'},
+{id:'area',c:'تحويل',i:'⬛',n:'مساحة أشكال',d:'مربع ودائرة'},
+{id:'vol',c:'تحويل',i:'📦',n:'حجم مكعب',d:'الأبعاد الثلاثة'},
+{id:'numsys',c:'تحويل',i:'01',n:'أنظمة الأرقام',d:'ثنائي وعشري'},
+{id:'roman',c:'تحويل',i:'🏛️',n:'أرقام رومانية',d:'من وإلى'},
+{id:'words',c:'تحويل',i:'🗣️',n:'رقم لكلام',d:'تحويل لنص'},
+{id:'text',c:'كتابة',i:'✍️',n:'عداد النصوص',d:'كلمات وحروف'},
+{id:'case',c:'كتابة',i:'Aa',n:'تحويل حالة',d:'كبير وصغير'},
+{id:'rev',c:'كتابة',i:'🔄',n:'عكس النص',d:'من الآخر'},
+{id:'space',c:'كتابة',i:'🧹',n:'تنظيف النص',d:'مسافات زيادة'},
+{id:'dup',c:'كتابة',i:'📋',n:'حذف التكرار',d:'من قائمة'},
+{id:'sort',c:'كتابة',i:'📶',n:'ترتيب قائمة',d:'أبجدي'},
+{id:'morse',c:'كتابة',i:'📡',n:'مورس',d:'نص ومورس'},
+{id:'url',c:'كتابة',i:'🔗',n:'ترميز رابط',d:'encode'},
+{id:'b64',c:'كتابة',i:'🧱',n:'Base64',d:'تشفير نص'},
+{id:'notes',c:'تنظيم',i:'📝',n:'ملاحظات',d:'حفظ محلي'},
+{id:'todo',c:'تنظيم',i:'✅',n:'مهام',d:'قائمة يومية'},
+{id:'habit',c:'تنظيم',i:'🔥',n:'عادات اليوم',d:'تتبع بسيط'},
+{id:'flash',c:'دراسة',i:'🧠',n:'بطاقات مراجعة',d:'سؤال وجواب'},
+{id:'table',c:'دراسة',i:'✖️',n:'جدول الضرب',d:'من 1 ل12'},
+{id:'prime',c:'دراسة',i:'➗',n:'عدد أولي',d:'فحص الرقم'},
+{id:'fact',c:'دراسة',i:'!',n:'المضروب',d:'n!'},
+{id:'gcd',c:'دراسة',i:'🧩',n:'قاسم ومضاعف',d:'GCD و LCM'},
+{id:'type',c:'دراسة',i:'⌨️',n:'سرعة الكتابة',d:'اختبار قصير'},
+{id:'react',c:'مرح',i:'⚡',n:'سرعة الاستجابة',d:'اضغط بسرعة'},
+{id:'dice',c:'مرح',i:'🎲',n:'نرد',d:'من 1 ل6'},
+{id:'coin',c:'مرح',i:'🪙',n:'عملة',d:'وجه أو كتابة'},
+{id:'yesno',c:'مرح',i:'❓',n:'نعم أو لا',d:'اختيار سريع'},
+{id:'pick',c:'مرح',i:'🎯',n:'اختيار من قائمة',d:'اسم عشوائي'},
+{id:'teams',c:'مرح',i:'👥',n:'تقسيم فرق',d:'وزع الأسماء'},
+{id:'rps',c:'مرح',i:'✂️',n:'حجرة ورقة مقص',d:'ضد الجهاز'},
+{id:'rand',c:'مرح',i:'🎰',n:'رقم عشوائي',d:'من وإلى'},
+{id:'color',c:'تصميم',i:'🎨',n:'لون',d:'HEX'},
+{id:'rgb',c:'تصميم',i:'🌈',n:'RGB إلى HEX',d:'تحويل لون'},
+{id:'palette',c:'تصميم',i:'🖌️',n:'لوحة ألوان',d:'5 ألوان'},
+{id:'contrast',c:'تصميم',i:'◐',n:'تباين لونين',d:'وضوح النص'},
+{id:'ratio',c:'تصميم',i:'🖼️',n:'نسبة أبعاد',d:'16:9'}
+];
+const grid=document.getElementById('tools-grid');
+let cat='الكل';
+function cats(){const set=['الكل',...new Set(T.map(t=>t.c))];document.getElementById('cats').innerHTML=set.map(c=>`<button onclick="cat='${c}';renderGrid(document.getElementById('search').value)" class="px-3 py-1.5 rounded-full text-sm ${cat===c?'bg-violet-600':'bg-slate-800'}">${c}</button>`).join('');}
+function renderGrid(f=''){cats();const q=f.trim();const list=T.filter(t=>(cat==='الكل'||t.c===cat)&&(t.n+t.d+t.c).includes(q));grid.innerHTML=list.map(t=>`<button class="tool-card glass rounded-2xl p-4 text-right" onclick="openTool('${t.id}')"><div class="text-2xl mb-1">${t.i}</div><div class="font-bold">${t.n}</div><div class="text-xs text-slate-400">${t.d}</div></button>`).join('')||'<p class="col-span-full text-slate-500">مفيش نتيجة</p>';}
+renderGrid();
+function filterTools(q){renderGrid(q);}
+function showHome(){document.getElementById('home').classList.remove('hidden-view');document.getElementById('tool-view').classList.add('hidden-view');}
+function openTool(id){document.getElementById('home').classList.add('hidden-view');document.getElementById('tool-view').classList.remove('hidden-view');document.getElementById('tool-content').innerHTML=V[id]();if(id==='notes')loadNotes();if(id==='todo')loadTodo();if(id==='habit')loadHabit();if(id==='world')tickWorld();}
+const inp=(id,ph='',type='text')=>`<input id="${id}" type="${type}" placeholder="${ph}" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3">`;
+const btn=(fn,lab,col='bg-violet-600')=>`<button onclick="${fn}" class="w-full ${col} py-3 rounded-xl font-bold mb-3">${lab}</button>`;
+const out=(id)=>`<div id="${id}" class="text-lg mt-2"></div>`;
+const V={
+calc(){return `<h3 class="text-2xl font-extrabold mb-4">حاسبة</h3><input id="c-out" readonly class="w-full bg-slate-900 rounded-2xl px-4 py-4 text-2xl mb-4 text-left" value="0"><div class="grid grid-cols-4 gap-2">${['C','÷','×','⌫','7','8','9','-','4','5','6','+','1','2','3','=','0','.','%','±'].map(b=>`<button class="calc-btn rounded-xl font-bold ${b==='='?'bg-violet-600':'bg-slate-800'}" onclick="calcPress('${b}')">${b}</button>`).join('')}</div>`},
+sci(){return `<h3 class="text-2xl font-extrabold mb-4">حاسبة علمية</h3>${inp('sc','مثال: 2^8 أو sqrt(81)')}${btn('doSci()','احسب')}${out('sc-o')}`},
+percent(){return `<h3 class="text-2xl font-extrabold mb-4">النسب</h3>${inp('pc-n','الرقم','number')}${inp('pc-p','النسبة','number')}${btn('doPercent()','احسب')}${out('pc-out')}`},
+grade(){return `<h3 class="text-2xl font-extrabold mb-4">الدرجات</h3>${inp('g-got','درجتك','number')}${inp('g-tot','من كام','number')}${btn('doGrade()','احسب')}${out('g-out')}`},
+gpa(){return `<h3 class="text-2xl font-extrabold mb-4">مجموع الثانوية</h3><p class="text-slate-400 text-sm mb-3">النسبة من 320 لكل الشعب</p>${inp('gpa-s','مجموعك من 320','number')}${btn('doGpa()','احسب النسبة')}${out('gpa-o')}`},
+zodiac(){return `<h3 class="text-2xl font-extrabold mb-4">اعرف برجك</h3><p class="text-slate-400 text-sm mb-3">للترفيه فقط، مش علم ولا توقع حقيقي</p>${inp('z-date','','date')}${btn('findSign()','اعرف البرج')}${out('z-out')}`},
+luck(){return `<h3 class="text-2xl font-extrabold mb-4">حظك اليوم</h3><select id="luck-s" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3">${SIGNS.map(s=>'<option value="'+s.id+'">'+s.i+' '+s.n+'</option>').join('')}</select>${btn('showLuck()','اعرض حظ اليوم')}${out('luck-o')}`},
+signs(){return `<h3 class="text-2xl font-extrabold mb-4">كل الأبراج</h3><div class="space-y-3">${SIGNS.map(s=>'<div class="glass rounded-xl p-4"><div class="font-bold text-lg">'+s.i+' '+s.n+' <span class="text-sm text-slate-400">'+s.dates+'</span></div><p class="text-sm text-slate-300 mt-1">'+s.trait+'</p></div>').join('')}</div>`},
+avg(){return `<h3 class="text-2xl font-extrabold mb-4">المتوسط</h3><textarea id="avg-t" rows="4" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3" placeholder="أرقام مفصولة بمسافة"></textarea>${btn('doAvg()','احسب')}${out('avg-o')}`},
+interest(){return `<h3 class="text-2xl font-extrabold mb-4">فائدة بسيطة</h3>${inp('in-p','المبلغ','number')}${inp('in-r','النسبة %','number')}${inp('in-y','السنين','number')}${btn('doInt()','احسب')}${out('in-o')}`},
+split(){return `<h3 class="text-2xl font-extrabold mb-4">تقسيم فاتورة</h3>${inp('sp-t','المبلغ','number')}${inp('sp-n','عدد الأشخاص','number')}${btn('doSplit()','قسم')}${out('sp-o')}`},
+bmi(){return `<h3 class="text-2xl font-extrabold mb-4">مؤشر الكتلة</h3>${inp('bmi-w','الوزن كجم','number')}${inp('bmi-h','الطول سم','number')}${btn('doBmi()','احسب')}${out('bmi-out')}`},
+water(){return `<h3 class="text-2xl font-extrabold mb-4">الماء</h3>${inp('wt-w','وزنك كجم','number')}${btn('doWater()','احسب')}${out('wt-o')}`},
+age(){return `<h3 class="text-2xl font-extrabold mb-4">العمر</h3>${inp('age-d','','date')}${btn('doAge()','احسب')}${out('age-out')}`},
+date(){return `<h3 class="text-2xl font-extrabold mb-4">فرق تاريخين</h3>${inp('d1','','date')}${inp('d2','','date')}${btn('diffDate()','احسب')}${out('d-out')}`},
+week(){return `<h3 class="text-2xl font-extrabold mb-4">رقم الأسبوع</h3>${inp('wk','','date')}${btn('doWeek()','احسب')}${out('wk-o')}`},
+countdown(){return `<h3 class="text-2xl font-extrabold mb-4">عد تنازلي</h3>${inp('cd','','datetime-local')}${btn('doCount()','ابدأ')}<div id="cd-o" class="text-3xl font-extrabold text-center text-cyan-300 mt-4"></div>`},
+timer(){return `<h3 class="text-2xl font-extrabold mb-4">بومودورو</h3><div id="pomo" class="text-6xl font-extrabold text-center my-6">25:00</div><div class="flex gap-3 justify-center"><button onclick="pomoStart()" class="bg-violet-600 px-5 py-3 rounded-xl font-bold">ابدأ</button><button onclick="pomoPause()" class="bg-slate-700 px-5 py-3 rounded-xl font-bold">وقف</button><button onclick="pomoReset()" class="bg-slate-800 px-5 py-3 rounded-xl font-bold">إعادة</button></div>`},
+stopwatch(){return `<h3 class="text-2xl font-extrabold mb-4">ساعة إيقاف</h3><div id="sw" class="text-6xl font-extrabold text-center my-6">00:00.00</div><div class="flex gap-3 justify-center"><button onclick="swStart()" class="bg-violet-600 px-5 py-3 rounded-xl font-bold">ابدأ</button><button onclick="swStop()" class="bg-slate-700 px-5 py-3 rounded-xl font-bold">وقف</button><button onclick="swReset()" class="bg-slate-800 px-5 py-3 rounded-xl font-bold">صفر</button></div>`},
+exam(){return `<h3 class="text-2xl font-extrabold mb-4">مؤقت امتحان</h3><select id="ex-m" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3"><option value="60">ساعة</option><option value="90">ساعة ونص</option><option value="120">ساعتين</option><option value="30">نصف ساعة</option></select><div id="ex-o" class="text-5xl font-extrabold text-center my-6">60:00</div><div class="flex gap-3 justify-center"><button onclick="exStart()" class="bg-violet-600 px-5 py-3 rounded-xl font-bold">ابدأ</button><button onclick="exStop()" class="bg-slate-700 px-5 py-3 rounded-xl font-bold">وقف</button></div>`},
+world(){return `<h3 class="text-2xl font-extrabold mb-4">توقيت مدن</h3><div id="world-o" class="space-y-3"></div>`},
+pass(){return `<h3 class="text-2xl font-extrabold mb-4">كلمة مرور</h3><div class="flex gap-2 mb-3"><input id="pw" readonly class="flex-1 bg-slate-900 rounded-xl px-4 py-3 font-mono"><button onclick="copyVal('pw')" class="bg-violet-600 px-4 rounded-xl font-bold">نسخ</button></div><label>الطول <span id="plen">16</span></label><input type="range" min="8" max="32" value="16" class="w-full mb-3" oninput="document.getElementById('plen').textContent=this.value;genPass()"><label><input id="p-u" type="checkbox" checked> كبيرة</label> <label><input id="p-l" type="checkbox" checked> صغيرة</label> <label><input id="p-n" type="checkbox" checked> أرقام</label> <label><input id="p-s" type="checkbox"> رموز</label>${btn('genPass()','توليد','bg-cyan-600')}`},
+pin(){return `<h3 class="text-2xl font-extrabold mb-4">رقم سري</h3><select id="pin-l" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3"><option>4</option><option>6</option><option>8</option></select>${btn('genPin()','توليد')}${out('pin-o')}`},
+uuid(){return `<h3 class="text-2xl font-extrabold mb-4">معرف</h3>${btn('genUuid()','توليد')}<div id="uuid-o" class="font-mono break-all"></div>`},
+units(){return `<h3 class="text-2xl font-extrabold mb-4">وحدات</h3><select id="u-type" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3" onchange="fillUnits()"><option value="len">طول</option><option value="w">وزن</option></select><div class="grid grid-cols-2 gap-3 mb-3"><select id="u-from" class="bg-slate-900 rounded-xl px-3 py-3"></select><select id="u-to" class="bg-slate-900 rounded-xl px-3 py-3"></select></div>${inp('u-val','1','number')}${btn('conv()','حول')}${out('u-res')}`},
+temp(){return `<h3 class="text-2xl font-extrabold mb-4">حرارة</h3>${inp('tp','درجة','number')}<select id="tp-f" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3"><option value="c">من مئوية</option><option value="f">من فهرنهايت</option></select>${btn('doTemp()','حول')}${out('tp-o')}`},
+data(){return `<h3 class="text-2xl font-extrabold mb-4">حجم الملفات</h3>${inp('dt','الرقم','number')}<select id="dt-f" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3"><option value="1">بايت</option><option value="1024">كيلوبايت</option><option value="1048576" selected>ميجابايت</option><option value="1073741824">جيجابايت</option></select>${btn('doData()','حول')}${out('dt-o')}`},
+speed(){return `<h3 class="text-2xl font-extrabold mb-4">سرعة ومسافة</h3>${inp('sd','المسافة كم','number')}${inp('ss','السرعة كم/س','number')}${btn('doSpeed()','احسب')}${out('sd-o')}`},
+area(){return `<h3 class="text-2xl font-extrabold mb-4">مساحة</h3><select id="ar-t" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3"><option value="sq">مربع</option><option value="re">مستطيل</option><option value="ci">دائرة</option></select>${inp('ar-a','الطول أو نصف القطر','number')}${inp('ar-b','العرض للمستطيل','number')}${btn('doArea()','احسب')}${out('ar-o')}`},
+vol(){return `<h3 class="text-2xl font-extrabold mb-4">الحجم</h3>${inp('v1','طول','number')}${inp('v2','عرض','number')}${inp('v3','ارتفاع','number')}${btn('doVol()','احسب')}${out('v-o')}`},
+numsys(){return `<h3 class="text-2xl font-extrabold mb-4">أنظمة أرقام</h3>${inp('ns','رقم عشري')}${btn('doNum()','حول')}${out('ns-o')}`},
+roman(){return `<h3 class="text-2xl font-extrabold mb-4">روماني</h3>${inp('rm','رقم أو XIV')}${btn('doRoman()','حول')}${out('rm-o')}`},
+words(){return `<h3 class="text-2xl font-extrabold mb-4">رقم لكلام</h3>${inp('wd','من 0 ل9999','number')}${btn('doWords()','حول')}${out('wd-o')}`},
+text(){return `<h3 class="text-2xl font-extrabold mb-4">عداد</h3><textarea id="tx" rows="6" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3" oninput="countText()"></textarea><div class="grid grid-cols-3 gap-3 text-center"><div class="glass rounded-xl p-3"><div id="c-ch" class="text-2xl font-bold">0</div><div class="text-xs">حرف</div></div><div class="glass rounded-xl p-3"><div id="c-w" class="text-2xl font-bold">0</div><div class="text-xs">كلمة</div></div><div class="glass rounded-xl p-3"><div id="c-l" class="text-2xl font-bold">0</div><div class="text-xs">سطر</div></div></div>`},
+case(){return `<h3 class="text-2xl font-extrabold mb-4">حالة النص</h3><textarea id="cs" rows="4" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3"></textarea><div class="grid grid-cols-2 gap-2"><button onclick="csCase('u')" class="bg-slate-800 py-3 rounded-xl">UPPER</button><button onclick="csCase('l')" class="bg-slate-800 py-3 rounded-xl">lower</button></div>`},
+rev(){return `<h3 class="text-2xl font-extrabold mb-4">عكس</h3><textarea id="rv" rows="4" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3"></textarea>${btn("document.getElementById('rv').value=[...document.getElementById('rv').value].reverse().join('')",'اعكس')}`},
+space(){return `<h3 class="text-2xl font-extrabold mb-4">تنظيف</h3><textarea id="spc" rows="4" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3"></textarea>${btn("document.getElementById('spc').value=document.getElementById('spc').value.replace(/\\s+/g,' ').trim()",'نظف')}`},
+dup(){return `<h3 class="text-2xl font-extrabold mb-4">حذف التكرار</h3><textarea id="dp" rows="6" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3" placeholder="سطر لكل عنصر"></textarea>${btn('doDup()','احذف')}`},
+sort(){return `<h3 class="text-2xl font-extrabold mb-4">ترتيب</h3><textarea id="sr" rows="6" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3"></textarea>${btn('doSort()','رتب')}`},
+morse(){return `<h3 class="text-2xl font-extrabold mb-4">مورس</h3><textarea id="mo" rows="3" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3"></textarea><div class="grid grid-cols-2 gap-2">${btn('toMorse()','إلى مورس')}${btn('fromMorse()','من مورس','bg-slate-700')}</div>${out('mo-o')}`},
+url(){return `<h3 class="text-2xl font-extrabold mb-4">رابط</h3><textarea id="ur" rows="3" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3"></textarea><div class="grid grid-cols-2 gap-2"><button onclick="document.getElementById('ur-o').textContent=encodeURIComponent(document.getElementById('ur').value)" class="bg-violet-600 py-3 rounded-xl">ترميز</button><button onclick="document.getElementById('ur-o').textContent=decodeURIComponent(document.getElementById('ur').value)" class="bg-slate-700 py-3 rounded-xl">فك</button></div>${out('ur-o')}`},
+b64(){return `<h3 class="text-2xl font-extrabold mb-4">Base64</h3><textarea id="b6" rows="3" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3"></textarea><div class="grid grid-cols-2 gap-2"><button onclick="document.getElementById('b6-o').textContent=btoa(unescape(encodeURIComponent(document.getElementById('b6').value)))" class="bg-violet-600 py-3 rounded-xl">تشفير</button><button onclick="try{document.getElementById('b6-o').textContent=decodeURIComponent(escape(atob(document.getElementById('b6').value)))}catch(e){document.getElementById('b6-o').textContent='مش صالح'}" class="bg-slate-700 py-3 rounded-xl">فك</button></div>${out('b6-o')}`},
+notes(){return `<h3 class="text-2xl font-extrabold mb-4">ملاحظات</h3><textarea id="notes-box" rows="10" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3"></textarea>${btn('saveNotes()','حفظ')}`},
+todo(){return `<h3 class="text-2xl font-extrabold mb-4">مهام</h3><div class="flex gap-2 mb-3"><input id="td-in" class="flex-1 bg-slate-900 rounded-xl px-4 py-3"><button onclick="addTodo()" class="bg-violet-600 px-4 rounded-xl font-bold">إضافة</button></div><div id="td-list"></div>`},
+habit(){return `<h3 class="text-2xl font-extrabold mb-4">عادات اليوم</h3><div id="hb"></div>`},
+flash(){return `<h3 class="text-2xl font-extrabold mb-4">بطاقات</h3>${inp('fl-q','السؤال')}${inp('fl-a','الإجابة')}${btn('addFlash()','أضف')}<div id="fl-list" class="space-y-2"></div>`},
+table(){return `<h3 class="text-2xl font-extrabold mb-4">جدول الضرب</h3>${inp('tb','رقم','number')}${btn('doTable()','اعرض')}${out('tb-o')}`},
+prime(){return `<h3 class="text-2xl font-extrabold mb-4">عدد أولي</h3>${inp('pr','رقم','number')}${btn('doPrime()','افحص')}${out('pr-o')}`},
+fact(){return `<h3 class="text-2xl font-extrabold mb-4">المضروب</h3>${inp('fc','أقل من 20','number')}${btn('doFact()','احسب')}${out('fc-o')}`},
+gcd(){return `<h3 class="text-2xl font-extrabold mb-4">قاسم ومضاعف</h3>${inp('g1','رقم 1','number')}${inp('g2','رقم 2','number')}${btn('doGcd()','احسب')}${out('g-o2')}`},
+type(){return `<h3 class="text-2xl font-extrabold mb-4">سرعة الكتابة</h3><p id="ty-s" class="mb-3 text-slate-300">العلم نور والجهل ظلام والمذاكرة طريق النجاح.</p><textarea id="ty" rows="3" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3" oninput="typeTick()"></textarea>${out('ty-o')}`},
+react(){return `<h3 class="text-2xl font-extrabold mb-4">الاستجابة</h3><button id="re-b" onclick="reactClick()" class="w-full h-40 bg-slate-800 rounded-3xl text-xl font-bold">اضغط للبدء</button>${out('re-o')}`},
+dice(){return `<h3 class="text-2xl font-extrabold mb-4">نرد</h3><div id="dice-v" class="text-7xl text-center my-4">🎲</div>${btn('rollDice()','ارمي')}`},
+coin(){return `<h3 class="text-2xl font-extrabold mb-4">عملة</h3><div id="coin-v" class="text-4xl text-center my-4">🪙</div>${btn('flipCoin()','ارمي')}`},
+yesno(){return `<h3 class="text-2xl font-extrabold mb-4">نعم أو لا</h3>${btn("document.getElementById('yn').textContent=Math.random()<.5?'نعم':'لا'",'اسأل')}<div id="yn" class="text-5xl font-extrabold text-center mt-4"></div>`},
+pick(){return `<h3 class="text-2xl font-extrabold mb-4">اختيار</h3><textarea id="pk" rows="5" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3" placeholder="اسم في كل سطر"></textarea>${btn('doPick()','اختار')}${out('pk-o')}`},
+teams(){return `<h3 class="text-2xl font-extrabold mb-4">فرق</h3><textarea id="tm" rows="5" class="w-full bg-slate-900 rounded-2xl px-4 py-3 mb-3" placeholder="اسم في كل سطر"></textarea>${inp('tm-n','عدد الفرق','number')}${btn('doTeams()','وزع')}${out('tm-o')}`},
+rps(){return `<h3 class="text-2xl font-extrabold mb-4">حجرة ورقة مقص</h3><div class="flex gap-2">${['حجرة','ورقة','مقص'].map(x=>`<button onclick="rps('${x}')" class="flex-1 bg-slate-800 py-4 rounded-xl font-bold">${x}</button>`).join('')}</div>${out('rps-o')}`},
+rand(){return `<h3 class="text-2xl font-extrabold mb-4">رقم عشوائي</h3><div class="grid grid-cols-2 gap-3">${inp('r-min','من','number')}${inp('r-max','إلى','number')}</div>${btn('randNum()','ولد')}<div id="r-out" class="text-5xl font-extrabold text-center text-cyan-300">?</div>`},
+color(){return `<h3 class="text-2xl font-extrabold mb-4">لون</h3><input id="col" type="color" value="#8b5cf6" class="w-full h-24 rounded-2xl mb-3 bg-transparent" oninput="showColor()"><div id="col-hex" class="text-2xl font-mono mb-3">#8B5CF6</div>${btn("copyText(document.getElementById('col-hex').textContent)",'نسخ')}`},
+rgb(){return `<h3 class="text-2xl font-extrabold mb-4">RGB</h3>${inp('rr','R','number')}${inp('gg','G','number')}${inp('bb','B','number')}${btn('doRgb()','حول')}${out('rgb-o')}`},
+palette(){return `<h3 class="text-2xl font-extrabold mb-4">لوحة ألوان</h3>${btn('doPal()','ولد')}<div id="pal" class="grid grid-cols-5 gap-2 mt-3"></div>`},
+contrast(){return `<h3 class="text-2xl font-extrabold mb-4">تباين</h3><div class="grid grid-cols-2 gap-3"><input id="c1" type="color" value="#ffffff" class="h-16 w-full"><input id="c2" type="color" value="#111111" class="h-16 w-full"></div>${btn('doCon()','افحص')}${out('con-o')}`},
+ratio(){return `<h3 class="text-2xl font-extrabold mb-4">أبعاد</h3>${inp('ra-w','العرض','number')}${inp('ra-h','الارتفاع','number')}${btn('doRatio()','احسب')}${out('ra-o')}`}
+};
+let expr='';
+function calcPress(b){const o=document.getElementById('c-out');if(b==='C'){expr='';o.value='0';return;}if(b==='⌫'){expr=expr.slice(0,-1);o.value=expr||'0';return;}if(b==='±'&&expr){expr=expr.startsWith('-')?expr.slice(1):'-'+expr;o.value=expr;return;}if(b==='%'){try{expr=String(eval(norm(expr))/100);o.value=expr;}catch(e){}return;}if(b==='='){try{expr=String(eval(norm(expr)));o.value=expr;}catch(e){o.value='خطأ';}return;}expr+=b;o.value=expr;}
+function norm(s){return s.replace(/×/g,'*').replace(/÷/g,'/');}
+function doSci(){let s=document.getElementById('sc').value.replace(/\^/g,'**').replace(/sqrt\(([^)]+)\)/g,'Math.sqrt($1)').replace(/(\d+)!/g,'factN($1)');try{document.getElementById('sc-o').textContent=eval(s);}catch(e){document.getElementById('sc-o').textContent='صيغة مش مفهومة';}}
+function factN(n){n=+n;if(n<0||n>20)return 'كبير';let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
+function doPercent(){const n=+document.getElementById('pc-n').value||0,p=+document.getElementById('pc-p').value||0;document.getElementById('pc-out').innerHTML=p+'% من '+n+' = <b>'+(n*p/100).toFixed(2)+'</b><br>بعد الزيادة '+(n+n*p/100).toFixed(2)+' • بعد الخصم '+(n-n*p/100).toFixed(2);}
+function doGrade(){const g=+document.getElementById('g-got').value,t=+document.getElementById('g-tot').value;if(!t)return;document.getElementById('g-out').textContent='النسبة '+(g/t*100).toFixed(1)+'%';}
+function doGpa(){const s=+document.getElementById('gpa-s').value;if(!s&&s!==0)return;const p=(s/320*100).toFixed(2);document.getElementById('gpa-o').innerHTML='مجموعك <b>'+s+'</b> من 320<br>النسبة <b class="text-cyan-300 text-2xl">'+p+'%</b>';}
+function doAvg(){const a=document.getElementById('avg-t').value.split(/[\s,]+/).map(Number).filter(n=>!isNaN(n));if(!a.length)return;const sum=a.reduce((x,y)=>x+y,0);document.getElementById('avg-o').textContent='المتوسط '+(sum/a.length).toFixed(2)+' • العدد '+a.length;}
+function doInt(){const p=+document.getElementById('in-p').value,r=+document.getElementById('in-r').value,y=+document.getElementById('in-y').value;const f=p*r*y/100;document.getElementById('in-o').textContent='الفائدة '+f.toFixed(2)+' • الإجمالي '+(p+f).toFixed(2);}
+function doSplit(){const t=+document.getElementById('sp-t').value,n=+document.getElementById('sp-n').value;document.getElementById('sp-o').textContent=n?'كل واحد '+(t/n).toFixed(2):'حدد العدد';}
+function doBmi(){const w=+document.getElementById('bmi-w').value,h=+document.getElementById('bmi-h').value/100;if(!w||!h)return;const b=w/(h*h);let m='ضمن المعدل الشائع تقريبا';if(b<18.5)m='أقل من المعدل الشائع';if(b>=25)m='أعلى من المعدل الشائع';document.getElementById('bmi-out').innerHTML='<div class="text-3xl font-extrabold text-cyan-300">'+b.toFixed(1)+'</div><p class="text-slate-400">'+m+'</p><p class="text-xs text-slate-500">رقم تقريبي مش تشخيص.</p>';}
+function doWater(){const w=+document.getElementById('wt-w').value;document.getElementById('wt-o').textContent=w?'حوالي '+(w*0.035).toFixed(1)+' لتر في اليوم':'اكتب الوزن';}
+function doAge(){const d=document.getElementById('age-d').value;if(!d)return;const b=new Date(d),n=new Date();let y=n.getFullYear()-b.getFullYear(),m=n.getMonth()-b.getMonth(),day=n.getDate()-b.getDate();if(day<0){m--;day+=30;}if(m<0){y--;m+=12;}document.getElementById('age-out').textContent=y+' سنة و '+m+' شهر و '+day+' يوم';}
+function diffDate(){const a=new Date(document.getElementById('d1').value),b=new Date(document.getElementById('d2').value);if(isNaN(a)||isNaN(b))return;const days=Math.abs(Math.round((b-a)/86400000));document.getElementById('d-out').textContent=days+' يوم';}
+function doWeek(){const d=new Date(document.getElementById('wk').value);if(isNaN(d))return;const t=new Date(d.getFullYear(),0,1);document.getElementById('wk-o').textContent='الأسبوع رقم '+Math.ceil((((d-t)/86400000)+t.getDay()+1)/7);}
+let cdId=null;
+function doCount(){clearInterval(cdId);const t=new Date(document.getElementById('cd').value).getTime();cdId=setInterval(()=>{const s=Math.max(0,t-Date.now());const d=Math.floor(s/86400000),h=Math.floor(s/3600000)%24,m=Math.floor(s/60000)%60,sec=Math.floor(s/1000)%60;document.getElementById('cd-o').textContent=d+'ي '+h+'س '+m+'د '+sec+'ث';},200);}
+let pomoT=1500,pomoId=null;
+function drawPomo(){document.getElementById('pomo').textContent=String(Math.floor(pomoT/60)).padStart(2,'0')+':'+String(pomoT%60).padStart(2,'0');}
+function pomoStart(){if(pomoId)return;pomoId=setInterval(()=>{if(pomoT<=0){clearInterval(pomoId);pomoId=null;alert('انتهى الوقت');return;}pomoT--;drawPomo();},1000);}
+function pomoPause(){clearInterval(pomoId);pomoId=null;}
+function pomoReset(){pomoPause();pomoT=1500;drawPomo();}
+let sw=0,swId=null;
+function drawSw(){const m=Math.floor(sw/6000),s=Math.floor(sw/100)%60,c=sw%100;document.getElementById('sw').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+String(c).padStart(2,'0');}
+function swStart(){if(swId)return;swId=setInterval(()=>{sw++;drawSw();},10);}
+function swStop(){clearInterval(swId);swId=null;}
+function swReset(){swStop();sw=0;drawSw();}
+let exT=3600,exId=null;
+function exStart(){clearInterval(exId);exT=+document.getElementById('ex-m').value*60;exId=setInterval(()=>{if(exT<=0){clearInterval(exId);alert('الوقت خلص');return;}exT--;document.getElementById('ex-o').textContent=String(Math.floor(exT/60)).padStart(2,'0')+':'+String(exT%60).padStart(2,'0');},1000);}
+function exStop(){clearInterval(exId);}
+function tickWorld(){const z=[['القاهرة','Africa/Cairo'],['الرياض','Asia/Riyadh'],['دبي','Asia/Dubai'],['لندن','Europe/London'],['نيويورك','America/New_York']];function draw(){document.getElementById('world-o').innerHTML=z.map(([n,tz])=>'<div class="glass rounded-xl px-4 py-3 flex justify-between"><span>'+n+'</span><b>'+new Date().toLocaleTimeString('ar-EG',{timeZone:tz,hour:'2-digit',minute:'2-digit'})+'</b></div>').join('');}draw();setInterval(draw,1000);}
+function genPass(){const len=+document.getElementById('plen').textContent;let ch='';if(document.getElementById('p-u').checked)ch+='ABCDEFGHJKLMNPQRSTUVWXYZ';if(document.getElementById('p-l').checked)ch+='abcdefghijkmnopqrstuvwxyz';if(document.getElementById('p-n').checked)ch+='23456789';if(document.getElementById('p-s').checked)ch+='!@#$%&*?';if(!ch)ch='abcdefghijkmnopqrstuvwxyz23456789';const a=new Uint32Array(len);crypto.getRandomValues(a);document.getElementById('pw').value=[...a].map(n=>ch[n%ch.length]).join('');}
+function genPin(){const l=+document.getElementById('pin-l').value;document.getElementById('pin-o').textContent=Array.from({length:l},()=>Math.floor(Math.random()*10)).join('');}
+function genUuid(){document.getElementById('uuid-o').textContent=crypto.randomUUID?crypto.randomUUID():Math.random().toString(16).slice(2);}
+const UNITS={len:{m:1,km:1000,cm:.01,mm:.001},w:{kg:1,g:.001,lb:.4536}};
+function fillUnits(){const t=document.getElementById('u-type').value;const names={len:[['m','متر'],['km','كم'],['cm','سم'],['mm','مم']],w:[['kg','كجم'],['g','جم'],['lb','رطل']]};const o=names[t].map(([v,l])=>'<option value="'+v+'">'+l+'</option>').join('');document.getElementById('u-from').innerHTML=o;document.getElementById('u-to').innerHTML=o;}
+function conv(){const t=document.getElementById('u-type').value,v=+document.getElementById('u-val').value||0,f=document.getElementById('u-from').value,to=document.getElementById('u-to').value;document.getElementById('u-res').textContent=(v*UNITS[t][f]/UNITS[t][to]).toFixed(4);}
+function doTemp(){const v=+document.getElementById('tp').value,f=document.getElementById('tp-f').value;document.getElementById('tp-o').textContent=f==='c'?v+' س = '+(v*9/5+32).toFixed(1)+' ف':v+' ف = '+((v-32)*5/9).toFixed(1)+' س';}
+function doData(){const n=+document.getElementById('dt').value||0,b=n*+document.getElementById('dt-f').value;document.getElementById('dt-o').innerHTML=(b/1024).toFixed(2)+' KB<br>'+(b/1048576).toFixed(2)+' MB<br>'+(b/1073741824).toFixed(3)+' GB';}
+function doSpeed(){const d=+document.getElementById('sd').value,s=+document.getElementById('ss').value;if(!s)return;const h=d/s;document.getElementById('sd-o').textContent='الزمن حوالي '+Math.floor(h)+' ساعة و '+Math.round((h%1)*60)+' دقيقة';}
+function doArea(){const t=document.getElementById('ar-t').value,a=+document.getElementById('ar-a').value,b=+document.getElementById('ar-b').value;let r=0;if(t==='sq')r=a*a;if(t==='re')r=a*b;if(t==='ci')r=Math.PI*a*a;document.getElementById('ar-o').textContent='المساحة '+r.toFixed(2);}
+function doVol(){document.getElementById('v-o').textContent='الحجم '+(((+document.getElementById('v1').value||0)*(+document.getElementById('v2').value||0)*(+document.getElementById('v3').value||0)).toFixed(2));}
+function doNum(){const n=parseInt(document.getElementById('ns').value,10);if(isNaN(n))return;document.getElementById('ns-o').innerHTML='ثنائي: '+n.toString(2)+'<br>ثماني: '+n.toString(8)+'<br>سداسي عشر: '+n.toString(16).toUpperCase();}
+function toRoman(n){if(n<=0||n>=4000)return 'خارج النطاق';const m=[[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];let s='';for(const [v,sy] of m){while(n>=v){s+=sy;n-=v;}}return s;}
+function fromRoman(s){const map={M:1000,D:500,C:100,L:50,X:10,V:5,I:1};s=s.toUpperCase();let n=0;for(let i=0;i<s.length;i++){const a=map[s[i]]||0,b=map[s[i+1]]||0;n+=a<b?-a:a;}return n;}
+function doRoman(){const v=document.getElementById('rm').value.trim();document.getElementById('rm-o').textContent=/^\d+$/.test(v)?toRoman(+v):fromRoman(v);}
+const ones=['صفر','واحد','اثنان','ثلاثة','أربعة','خمسة','ستة','سبعة','ثمانية','تسعة','عشرة','أحد عشر','اثنا عشر','ثلاثة عشر','أربعة عشر','خمسة عشر','ستة عشر','سبعة عشر','ثمانية عشر','تسعة عشر'];
+const tens=['','','عشرون','ثلاثون','أربعون','خمسون','ستون','سبعون','ثمانون','تسعون'];
+function numAr(n){n=+n;if(n<20)return ones[n];if(n<100)return (n%10?ones[n%10]+' و':'')+tens[Math.floor(n/10)];if(n<1000)return (n<200?'مائة':n<300?'مائتان':ones[Math.floor(n/100)]+'مائة')+(n%100?' و'+numAr(n%100):'');if(n<10000)return (n<2000?'ألف':ones[Math.floor(n/1000)]+' آلاف')+(n%1000?' و'+numAr(n%1000):'');return String(n);}
+function doWords(){document.getElementById('wd-o').textContent=numAr(document.getElementById('wd').value);}
+function countText(){const t=document.getElementById('tx').value;document.getElementById('c-ch').textContent=t.length;document.getElementById('c-w').textContent=t.trim()?t.trim().split(/\s+/).length:0;document.getElementById('c-l').textContent=t?t.split('\n').length:0;}
+function csCase(k){const e=document.getElementById('cs');e.value=k==='u'?e.value.toUpperCase():e.value.toLowerCase();}
+function doDup(){const e=document.getElementById('dp');e.value=[...new Set(e.value.split('\n').map(s=>s.trim()).filter(Boolean))].join('\n');}
+function doSort(){const e=document.getElementById('sr');e.value=e.value.split('\n').filter(Boolean).sort((a,b)=>a.localeCompare(b,'ar')).join('\n');}
+const MZ={a:'.-',b:'-...',c:'-.-.',d:'-..',e:'.',f:'..-.',g:'--.',h:'....',i:'..',j:'.---',k:'-.-',l:'.-..',m:'--',n:'-.',o:'---',p:'.--.',q:'--.-',r:'.-.',s:'...',t:'-',u:'..-',v:'...-',w:'.--',x:'-..-',y:'-.--',z:'--..',' ':'/'};
+const ZM=Object.fromEntries(Object.entries(MZ).map(([k,v])=>[v,k]));
+function toMorse(){document.getElementById('mo-o').textContent=document.getElementById('mo').value.toLowerCase().split('').map(c=>MZ[c]||c).join(' ');}
+function fromMorse(){document.getElementById('mo-o').textContent=document.getElementById('mo').value.trim().split(' ').map(c=>ZM[c]||c).join('');}
+function saveNotes(){if(!needUser())return;udata().notes=document.getElementById('notes-box').value;saveU();alert('اتحفظت في حسابك');}
+function loadNotes(){const el=document.getElementById('notes-box');if(el)el.value=(udata().notes||'');}
+function addTodo(){if(!needUser())return;const v=document.getElementById('td-in').value.trim();if(!v)return;const u=udata();u.todo=u.todo||[];u.todo.push({t:v,d:false});saveU();document.getElementById('td-in').value='';loadTodo();}
+function loadTodo(){const l=(udata().todo||[]);const b=document.getElementById('td-list');if(!b)return;b.innerHTML=l.map((x,i)=>'<div class="flex gap-3 items-center bg-slate-900 rounded-xl px-4 py-3 mb-2"><input type="checkbox" '+(x.d?'checked':'')+' onchange="togTodo('+i+')"><span class="flex-1 '+(x.d?'line-through text-slate-500':'')+'">'+x.t+'</span><button onclick="delTodo('+i+')">حذف</button></div>').join('')||'<p class="text-slate-500">فاضية</p>';}
+function togTodo(i){const u=udata();u.todo[i].d=!u.todo[i].d;saveU();loadTodo();}
+function delTodo(i){const u=udata();u.todo.splice(i,1);saveU();loadTodo();}
+const HAB=['شرب ماء','مذاكرة ساعة','صلاة في وقتها','نوم بدري','رياضة خفيفة'];
+function loadHabit(){if(!CUR){document.getElementById('hb').innerHTML='<p class="text-slate-400">سجل دخول عشان تتحفظ عاداتك</p>';return;}const d=new Date().toDateString();const u=udata();u.hab=u.hab||{day:'',done:[]};if(u.hab.day!==d){u.hab={day:d,done:[]};saveU();}document.getElementById('hb').innerHTML=HAB.map((h,i)=>'<label class="flex gap-3 bg-slate-900 rounded-xl px-4 py-3 mb-2"><input type="checkbox" '+(u.hab.done.includes(i)?'checked':'')+' onchange="togHab('+i+')"><span>'+h+'</span></label>').join('');}
+function togHab(i){const u=udata();if(u.hab.done.includes(i))u.hab.done=u.hab.done.filter(x=>x!==i);else u.hab.done.push(i);saveU();}
+function addFlash(){if(!needUser())return;const q=document.getElementById('fl-q').value.trim(),a=document.getElementById('fl-a').value.trim();if(!q||!a)return;const u=udata();u.flash=u.flash||[];u.flash.push({q,a});saveU();document.getElementById('fl-list').innerHTML=u.flash.map(x=>'<div class="glass rounded-xl p-3"><b>'+x.q+'</b><div class="text-slate-400 text-sm mt-1">'+x.a+'</div></div>').join('');}
+function doTable(){const n=+document.getElementById('tb').value;if(!n)return;document.getElementById('tb-o').innerHTML=Array.from({length:12},(_,i)=>n+' × '+(i+1)+' = '+(n*(i+1))).join('<br>');}
+function doPrime(){const n=+document.getElementById('pr').value;let ok=n>1;for(let i=2;i*i<=n;i++)if(n%i===0)ok=false;document.getElementById('pr-o').textContent=ok?'نعم، أولي':'لا، مش أولي';}
+function doFact(){document.getElementById('fc-o').textContent=factN(document.getElementById('fc').value);}
+function gcd(a,b){return b?gcd(b,a%b):Math.abs(a);}
+function doGcd(){const a=+document.getElementById('g1').value,b=+document.getElementById('g2').value;const g=gcd(a,b);document.getElementById('g-o2').textContent='القاسم '+g+' • المضاعف '+(a*b/g);}
+let ty0=null;
+function typeTick(){const s=document.getElementById('ty-s').textContent,t=document.getElementById('ty').value;if(!ty0)ty0=Date.now();const sec=Math.max(1,(Date.now()-ty0)/1000),wpm=Math.round((t.trim().split(/\s+/).length/sec)*60);document.getElementById('ty-o').textContent='حوالي '+wpm+' كلمة/دقيقة';}
+let reWait=0,reStart=0;
+function reactClick(){const b=document.getElementById('re-b');if(reWait===0){b.textContent='استنى اللون الأخضر';b.className='w-full h-40 bg-slate-700 rounded-3xl text-xl font-bold';reWait=1;setTimeout(()=>{reWait=2;reStart=Date.now();b.textContent='اضغط دلوقتي';b.className='w-full h-40 bg-emerald-600 rounded-3xl text-xl font-bold';},800+Math.random()*1500);}else if(reWait===2){document.getElementById('re-o').textContent=(Date.now()-reStart)+' ملي ثانية';reWait=0;b.textContent='اضغط للبدء';b.className='w-full h-40 bg-slate-800 rounded-3xl text-xl font-bold';}else{document.getElementById('re-o').textContent='بدري أوي';reWait=0;}}
+function rollDice(){document.getElementById('dice-v').textContent=['⚀','⚁','⚂','⚃','⚄','⚅'][Math.floor(Math.random()*6)];}
+function flipCoin(){document.getElementById('coin-v').textContent=Math.random()<.5?'وجه':'كتابة';}
+function doPick(){const a=document.getElementById('pk').value.split('\n').map(s=>s.trim()).filter(Boolean);document.getElementById('pk-o').textContent=a.length?a[Math.floor(Math.random()*a.length)]:'القائمة فاضية';}
+function doTeams(){const a=document.getElementById('tm').value.split('\n').map(s=>s.trim()).filter(Boolean).sort(()=>Math.random()-.5);const n=Math.max(2,+document.getElementById('tm-n').value||2);const teams=Array.from({length:n},()=>[]);a.forEach((x,i)=>teams[i%n].push(x));document.getElementById('tm-o').innerHTML=teams.map((t,i)=>'<div class="glass rounded-xl p-3 mb-2"><b>فريق '+(i+1)+'</b><div>'+t.join('، ')+'</div></div>').join('');}
+function rps(u){const c=['حجرة','ورقة','مقص'][Math.floor(Math.random()*3)];const win=(u==='حجرة'&&c==='مقص')||(u==='ورقة'&&c==='حجرة')||(u==='مقص'&&c==='ورقة');document.getElementById('rps-o').textContent=u===c?'تعادل':win?'كسبت! الجهاز اختار '+c:'الجهاز كسب بـ '+c;}
+function randNum(){let a=+document.getElementById('r-min').value,b=+document.getElementById('r-max').value;if(a>b){const t=a;a=b;b=t;}document.getElementById('r-out').textContent=Math.floor(Math.random()*(b-a+1))+a;}
+function showColor(){document.getElementById('col-hex').textContent=document.getElementById('col').value.toUpperCase();}
+function doRgb(){const r=+document.getElementById('rr').value||0,g=+document.getElementById('gg').value||0,b=+document.getElementById('bb').value||0;document.getElementById('rgb-o').textContent='#'+[r,g,b].map(x=>Math.max(0,Math.min(255,x)).toString(16).padStart(2,'0')).join('').toUpperCase();}
+function doPal(){document.getElementById('pal').innerHTML=Array.from({length:5},()=>{const c='#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0');return '<div class="h-16 rounded-xl" style="background:'+c+'" title="'+c+'"></div>';}).join('');}
+function hexLum(h){h=h.replace('#','');const n=parseInt(h,16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;const f=x=>x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4);return .2126*f(r)+.7152*f(g)+.0722*f(b);}
+function doCon(){const a=hexLum(document.getElementById('c1').value),b=hexLum(document.getElementById('c2').value);const r=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);document.getElementById('con-o').textContent='التباين '+r.toFixed(2)+' • '+(r>=4.5?'واضح':'ضعيف شوية');}
+function doRatio(){const w=+document.getElementById('ra-w').value,h=+document.getElementById('ra-h').value;if(!w||!h)return;const g=gcd(w,h);document.getElementById('ra-o').textContent='النسبة '+(w/g)+':'+(h/g);}
+function copyVal(id){navigator.clipboard.writeText(document.getElementById(id).value);}
+function copyText(t){navigator.clipboard.writeText(t);}
+
+const SIGNS=[
+{id:'aries',i:'♈',n:'الحمل',dates:'21 مارس - 19 أبريل',trait:'شجاع ومتحمس وبيبدأ بسرعة. نصحته: ابدأ المهمة من غير مماطلة.'},
+{id:'taurus',i:'♉',n:'الثور',dates:'20 أبريل - 20 مايو',trait:'ثابت وصاحب صبر. نصحته: قسم المذاكرة لخطوات صغيرة.'},
+{id:'gemini',i:'♊',n:'الجوزاء',dates:'21 مايو - 20 يونيو',trait:'فضولي وسريع الفهم. نصحته: ركز في مادة واحدة كل جلسة.'},
+{id:'cancer',i:'♋',n:'السرطان',dates:'21 يونيو - 22 يوليو',trait:'حساس ووفي. نصحته: مكان مذاكرة هادي هيفيدك.'},
+{id:'leo',i:'♌',n:'الأسد',dates:'23 يوليو - 22 أغسطس',trait:'واثق وبيحب التميز. نصحته: حوّل ثقتك لجهد منظم.'},
+{id:'virgo',i:'♍',n:'العذراء',dates:'23 أغسطس - 22 سبتمبر',trait:'مرتب ودقيق. نصحته: متزودش ضغط على نفسك.'},
+{id:'libra',i:'♎',n:'الميزان',dates:'23 سبتمبر - 22 أكتوبر',trait:'متوازن وبيحب النظام. نصحته: اعمل جدول واضح والتزم بيه.'},
+{id:'scorpio',i:'♏',n:'العقرب',dates:'23 أكتوبر - 21 نوفمبر',trait:'عميق وصاحب إصرار. نصحته: استغل تركيزك في المسائل الصعبة.'},
+{id:'sagittarius',i:'♐',n:'القوس',dates:'22 نوفمبر - 21 ديسمبر',trait:'متفائل وبيحب التعلم. نصحته: خلّي هدفك واضح كل أسبوع.'},
+{id:'capricorn',i:'♑',n:'الجدي',dates:'22 ديسمبر - 19 يناير',trait:'مجتهد ومنظم. نصحته: خليك ثابت حتى لو اليوم مش مثالي.'},
+{id:'aquarius',i:'♒',n:'الدلو',dates:'20 يناير - 18 فبراير',trait:'مبدع ومفكر مختلف. نصحته: اشرح الدرس بطريقتك عشان يثبت.'},
+{id:'pisces',i:'♓',n:'الحوت',dates:'19 فبراير - 20 مارس',trait:'خيالي ولطيف. نصحته: ابدأ بالمادة الأسهل عشان تدخل الجو.'}
+];
+function signFromDate(iso){
+  const d=new Date(iso); if(isNaN(d)) return null;
+  const m=d.getMonth()+1, day=d.getDate();
+  const ranges=[[3,21,4,19,'aries'],[4,20,5,20,'taurus'],[5,21,6,20,'gemini'],[6,21,7,22,'cancer'],[7,23,8,22,'leo'],[8,23,9,22,'virgo'],[9,23,10,22,'libra'],[10,23,11,21,'scorpio'],[11,22,12,21,'sagittarius'],[12,22,12,31,'capricorn'],[1,1,1,19,'capricorn'],[1,20,2,18,'aquarius'],[2,19,3,20,'pisces']];
+  for(const [m1,d1,m2,d2,id] of ranges){ if((m===m1&&day>=d1)||(m===m2&&day<=d2)||(m1===12&&m2===31&&m===12&&day>=22)) return SIGNS.find(s=>s.id===id); }
+  return SIGNS[0];
+}
+function findSign(){
+  const s=signFromDate(document.getElementById('z-date').value);
+  if(!s){document.getElementById('z-out').textContent='اختار تاريخ ميلادك';return;}
+  if(CUR){const u=udata();u.birth=document.getElementById('z-date').value;u.sign=s.id;saveU();}
+  document.getElementById('z-out').innerHTML='<div class="text-3xl mb-2">'+s.i+'</div><div class="font-bold text-xl">'+s.n+'</div><div class="text-slate-400 text-sm">'+s.dates+'</div><p class="mt-3 text-slate-200">'+s.trait+'</p>'+(CUR?'<p class="text-xs text-emerald-400 mt-2">اتحفظ البرج في حسابك</p>':'<p class="text-xs text-slate-500 mt-2">سجل دخول عشان يتحفظ</p>');
+}
+function showLuck(){
+  const id=document.getElementById('luck-s').value;
+  const s=SIGNS.find(x=>x.id===id);
+  const day=new Date().toDateString();
+  let n=0; for(const ch of (id+day)) n+=ch.charCodeAt(0);
+  const score=40+(n%56);
+  const study=['اليوم مناسب لمراجعة سريعة.','ركز في مادة واحدة بس.','حل مسائل أكتر من القراءة.','اقرأ ملخصك قبل النوم.','ابدأ بالجزء اللي بتأجله.'];
+  const mood=['مزاجك هيبقى ثابت لو نظمت يومك.','خد بريك قصير كل ساعة.','اتكلم مع حد يشجعك من غير ما تضيع وقت.','قلل الموبايل في وقت المذاكرة.'];
+  const luck=['حظ الدراسة متوسط، الجهد هو اللي هيفرق.','يوم كويس للترتيب والتحضير.','لو التزمت هتحس بتقدم واضح.','متستعجلش النتائج.'];
+  document.getElementById('luck-o').innerHTML='<div class="text-2xl font-bold mb-2">'+s.i+' '+s.n+'</div><div class="mb-2">مؤشر اليوم: <b class="text-cyan-300">'+score+'%</b></div><div class="space-y-2 text-sm text-slate-200"><div class="glass rounded-xl p-3">📘 دراسة: '+study[n%study.length]+'</div><div class="glass rounded-xl p-3">🌤️ يومك: '+mood[n%mood.length]+'</div><div class="glass rounded-xl p-3">✨ ملاحظة: '+luck[n%luck.length]+'</div></div><p class="text-xs text-slate-500 mt-3">للترفيه فقط. النجاح بييجي من المذاكرة مش من البرج.</p>';
+}
+
+let CUR=localStorage.getItem('box-cur')||'';
+function users(){return JSON.parse(localStorage.getItem('box-users')||'{}');}
+function saveUsers(u){localStorage.setItem('box-users',JSON.stringify(u));}
+function udata(){const all=users();if(!CUR)return {};all[CUR]=all[CUR]||{pass:'',notes:'',todo:[],hab:{day:'',done:[]},flash:[],sign:'',birth:''};return all[CUR];}
+function saveU(){if(!CUR)return;const all=users();all[CUR]=Object.assign(udata(),all[CUR]);saveUsers(all);}
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h)+s.charCodeAt(i)|0;return String(h);}
+function needUser(){if(CUR)return true;alert('سجل حساب أو ادخل الأول عشان بياناتك تتحفظ لوحدك');toggleAcc();return false;}
+function toggleAcc(){const p=document.getElementById('acc-panel');p.classList.toggle('hidden-view');drawAcc();}
+function drawAcc(){
+  const box=document.getElementById('acc-out');
+  if(CUR){
+    const u=udata();
+    const sg=SIGNS.find(s=>s.id===u.sign);
+    box.innerHTML='<div class="flex flex-wrap items-center justify-between gap-3"><div><b>أهلاً '+CUR+'</b><div class="text-xs text-slate-400">بياناتك محفوظة في حسابك بس على الجهاز ده</div>'+(sg?'<div class="text-sm mt-1">برجك: '+sg.i+' '+sg.n+'</div>':'')+'</div><button onclick="logout()" class="bg-slate-800 px-4 py-2 rounded-xl">خروج</button></div>';
+    document.getElementById('acc-btn').textContent=CUR;
+    return;
+  }
+  box.innerHTML='<div class="grid md:grid-cols-2 gap-4"><div><div class="font-bold mb-2">دخول</div><input id="lg-u" class="w-full bg-slate-900 rounded-xl px-3 py-2 mb-2" placeholder="اسم المستخدم"><input id="lg-p" type="password" class="w-full bg-slate-900 rounded-xl px-3 py-2 mb-2" placeholder="كلمة المرور"><button onclick="login()" class="w-full bg-violet-600 py-2 rounded-xl font-bold">دخول</button></div><div><div class="font-bold mb-2">إنشاء حساب</div><input id="rg-u" class="w-full bg-slate-900 rounded-xl px-3 py-2 mb-2" placeholder="اسم مستخدم جديد"><input id="rg-p" type="password" class="w-full bg-slate-900 rounded-xl px-3 py-2 mb-2" placeholder="كلمة مرور"><button onclick="register()" class="w-full bg-cyan-600 py-2 rounded-xl font-bold">تسجيل</button></div></div><p class="text-xs text-slate-500 mt-3">الحساب محلي على المتصفح. كل مستخدم بياناته منفصلة. مش حساب إنترنت.</p>';
+  document.getElementById('acc-btn').textContent='حساب';
+}
+function register(){
+  const u=(document.getElementById('rg-u').value||'').trim(),p=document.getElementById('rg-p').value;
+  if(u.length<3)return alert('اسم المستخدم 3 حروف على الأقل');
+  if(p.length<4)return alert('كلمة المرور 4 حروف على الأقل');
+  const all=users(); if(all[u])return alert('الاسم مستخدم');
+  all[u]={pass:hash(p),notes:'',todo:[],hab:{day:'',done:[]},flash:[],sign:'',birth:''};
+  saveUsers(all); CUR=u; localStorage.setItem('box-cur',CUR); drawAcc(); alert('الحساب اتفتح');
+}
+function login(){
+  const u=(document.getElementById('lg-u').value||'').trim(),p=document.getElementById('lg-p').value;
+  const all=users();
+  if(!all[u]||all[u].pass!==hash(p))return alert('اسم أو كلمة مرور غلط');
+  CUR=u; localStorage.setItem('box-cur',CUR); drawAcc();
+}
+function logout(){CUR='';localStorage.removeItem('box-cur');drawAcc();}
+if(CUR) drawAcc();
+</script>
+</body>
+</html>
