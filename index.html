@@ -52,11 +52,12 @@
 <footer class="text-center text-slate-500 text-sm py-10">كل الحسابات بتتم على جهازك</footer>
 <script>
 const T=[
+{id:'ai',c:'ذكاء',i:'🤖',n:'اسأل الذكاء',d:'بدون حساب وبدون رقم'},
 {id:'calc',c:'حساب',i:'🧮',n:'حاسبة',d:'جمع وطرح وضرب'},
 {id:'sci',c:'حساب',i:'🔬',n:'حاسبة علمية',d:'أس وجذر'},
 {id:'percent',c:'حساب',i:'٪',n:'حاسبة نسب',d:'خصم وزيادة'},
 {id:'grade',c:'دراسة',i:'🎓',n:'حاسبة درجات',d:'النسبة المئوية'},
-{id:'gpa',c:'دراسة',i:'📊',n:'مجموع الثانوية',d:'من 320 للكل'},
+{id:'gpa',c:'دراسة',i:'📊',n:'مجموع الثانوية',d:'المجموع ÷ 3.2'},
 {id:'zodiac',c:'أبراج',i:'♈',n:'اعرف برجك',d:'من تاريخ الميلاد'},
 {id:'luck',c:'أبراج',i:'✨',n:'حظك اليوم',d:'حسب برجك'},
 {id:'signs',c:'أبراج',i:'🌌',n:'كل الأبراج',d:'صفات كل برج'},
@@ -124,16 +125,34 @@ function renderGrid(f=''){cats();const q=f.trim();const list=T.filter(t=>(cat===
 renderGrid();
 function filterTools(q){renderGrid(q);}
 function showHome(){document.getElementById('home').classList.remove('hidden-view');document.getElementById('tool-view').classList.add('hidden-view');}
-function openTool(id){document.getElementById('home').classList.add('hidden-view');document.getElementById('tool-view').classList.remove('hidden-view');document.getElementById('tool-content').innerHTML=V[id]();if(id==='notes')loadNotes();if(id==='todo')loadTodo();if(id==='habit')loadHabit();if(id==='world')tickWorld();}
+function openTool(id){document.getElementById('home').classList.add('hidden-view');document.getElementById('tool-view').classList.remove('hidden-view');document.getElementById('tool-content').innerHTML=V[id]();if(id==='notes')loadNotes();if(id==='todo')loadTodo();if(id==='habit')loadHabit();if(id==='world')tickWorld();if(id==='ai')initAI();}
 const inp=(id,ph='',type='text')=>`<input id="${id}" type="${type}" placeholder="${ph}" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3">`;
 const btn=(fn,lab,col='bg-violet-600')=>`<button onclick="${fn}" class="w-full ${col} py-3 rounded-xl font-bold mb-3">${lab}</button>`;
 const out=(id)=>`<div id="${id}" class="text-lg mt-2"></div>`;
 const V={
+ai(){return `<h3 class="text-2xl font-extrabold mb-2">🤖 اسأل الذكاء</h3>
+<p class="text-slate-400 text-sm mb-3">من غير حساب. أول مرة بيتحمّل موديل على جهازك (حوالي 400 ميجا).</p>
+<div id="ai-prog" class="glass rounded-2xl p-4 mb-3">
+  <div class="flex justify-between text-sm mb-2">
+    <span id="ai-prog-text">جاهز للتحميل</span>
+    <span id="ai-prog-pct" class="font-bold text-cyan-300">0%</span>
+  </div>
+  <div class="h-3 bg-slate-800 rounded-full overflow-hidden">
+    <div id="ai-bar" class="h-full bg-gradient-to-l from-violet-500 to-cyan-400 w-0 transition-all"></div>
+  </div>
+  <div id="ai-prog-sub" class="text-xs text-slate-400 mt-2">اضغط إرسال أو حمّل الموديل</div>
+</div>
+<button onclick="loadLocalAI()" class="mb-3 bg-slate-800 px-4 py-2 rounded-xl text-sm font-bold">تحميل الموديل</button>
+<div id="ai-box" class="bg-slate-900 rounded-2xl p-4 h-72 overflow-y-auto space-y-3 mb-3 text-sm"></div>
+<div class="flex gap-2">
+  <input id="ai-q" class="flex-1 bg-slate-900 rounded-xl px-4 py-3" placeholder="مثال: اشرح قانون أوم ببساطة" onkeydown="if(event.key==='Enter')askAI()">
+  <button onclick="askAI()" class="bg-violet-600 px-5 rounded-xl font-bold">إرسال</button>
+</div>`},
 calc(){return `<h3 class="text-2xl font-extrabold mb-4">حاسبة</h3><input id="c-out" readonly class="w-full bg-slate-900 rounded-2xl px-4 py-4 text-2xl mb-4 text-left" value="0"><div class="grid grid-cols-4 gap-2">${['C','÷','×','⌫','7','8','9','-','4','5','6','+','1','2','3','=','0','.','%','±'].map(b=>`<button class="calc-btn rounded-xl font-bold ${b==='='?'bg-violet-600':'bg-slate-800'}" onclick="calcPress('${b}')">${b}</button>`).join('')}</div>`},
 sci(){return `<h3 class="text-2xl font-extrabold mb-4">حاسبة علمية</h3>${inp('sc','مثال: 2^8 أو sqrt(81)')}${btn('doSci()','احسب')}${out('sc-o')}`},
 percent(){return `<h3 class="text-2xl font-extrabold mb-4">النسب</h3>${inp('pc-n','الرقم','number')}${inp('pc-p','النسبة','number')}${btn('doPercent()','احسب')}${out('pc-out')}`},
 grade(){return `<h3 class="text-2xl font-extrabold mb-4">الدرجات</h3>${inp('g-got','درجتك','number')}${inp('g-tot','من كام','number')}${btn('doGrade()','احسب')}${out('g-out')}`},
-gpa(){return `<h3 class="text-2xl font-extrabold mb-4">مجموع الثانوية</h3><p class="text-slate-400 text-sm mb-3">النسبة من 320 لكل الشعب</p>${inp('gpa-s','مجموعك من 320','number')}${btn('doGpa()','احسب النسبة')}${out('gpa-o')}`},
+gpa(){return `<h3 class="text-2xl font-extrabold mb-4">مجموع الثانوية</h3><p class="text-slate-400 text-sm mb-3">المجموع من 320، والنسبة = المجموع ÷ 3.2</p>${inp('gpa-s','مجموعك من 320','number')}${btn('doGpa()','احسب النسبة')}${out('gpa-o')}`},
 zodiac(){return `<h3 class="text-2xl font-extrabold mb-4">اعرف برجك</h3><p class="text-slate-400 text-sm mb-3">للترفيه فقط، مش علم ولا توقع حقيقي</p>${inp('z-date','','date')}${btn('findSign()','اعرف البرج')}${out('z-out')}`},
 luck(){return `<h3 class="text-2xl font-extrabold mb-4">حظك اليوم</h3><select id="luck-s" class="w-full bg-slate-900 rounded-xl px-4 py-3 mb-3">${SIGNS.map(s=>'<option value="'+s.id+'">'+s.i+' '+s.n+'</option>').join('')}</select>${btn('showLuck()','اعرض حظ اليوم')}${out('luck-o')}`},
 signs(){return `<h3 class="text-2xl font-extrabold mb-4">كل الأبراج</h3><div class="space-y-3">${SIGNS.map(s=>'<div class="glass rounded-xl p-4"><div class="font-bold text-lg">'+s.i+' '+s.n+' <span class="text-sm text-slate-400">'+s.dates+'</span></div><p class="text-sm text-slate-300 mt-1">'+s.trait+'</p></div>').join('')}</div>`},
@@ -201,7 +220,7 @@ function doSci(){let s=document.getElementById('sc').value.replace(/\^/g,'**').r
 function factN(n){n=+n;if(n<0||n>20)return 'كبير';let r=1;for(let i=2;i<=n;i++)r*=i;return r;}
 function doPercent(){const n=+document.getElementById('pc-n').value||0,p=+document.getElementById('pc-p').value||0;document.getElementById('pc-out').innerHTML=p+'% من '+n+' = <b>'+(n*p/100).toFixed(2)+'</b><br>بعد الزيادة '+(n+n*p/100).toFixed(2)+' • بعد الخصم '+(n-n*p/100).toFixed(2);}
 function doGrade(){const g=+document.getElementById('g-got').value,t=+document.getElementById('g-tot').value;if(!t)return;document.getElementById('g-out').textContent='النسبة '+(g/t*100).toFixed(1)+'%';}
-function doGpa(){const s=+document.getElementById('gpa-s').value;if(!s&&s!==0)return;const p=(s/320*100).toFixed(2);document.getElementById('gpa-o').innerHTML='مجموعك <b>'+s+'</b> من 320<br>النسبة <b class="text-cyan-300 text-2xl">'+p+'%</b>';}
+function doGpa(){const s=+document.getElementById('gpa-s').value;if(!s&&s!==0)return;const p=(s/3.2).toFixed(2);document.getElementById('gpa-o').innerHTML='مجموعك <b>'+s+'</b> من 320<br>'+s+' ÷ 3.2 = <b class="text-cyan-300 text-2xl">'+p+'%</b>';}
 function doAvg(){const a=document.getElementById('avg-t').value.split(/[\s,]+/).map(Number).filter(n=>!isNaN(n));if(!a.length)return;const sum=a.reduce((x,y)=>x+y,0);document.getElementById('avg-o').textContent='المتوسط '+(sum/a.length).toFixed(2)+' • العدد '+a.length;}
 function doInt(){const p=+document.getElementById('in-p').value,r=+document.getElementById('in-r').value,y=+document.getElementById('in-y').value;const f=p*r*y/100;document.getElementById('in-o').textContent='الفائدة '+f.toFixed(2)+' • الإجمالي '+(p+f).toFixed(2);}
 function doSplit(){const t=+document.getElementById('sp-t').value,n=+document.getElementById('sp-n').value;document.getElementById('sp-o').textContent=n?'كل واحد '+(t/n).toFixed(2):'حدد العدد';}
@@ -286,6 +305,97 @@ function doCon(){const a=hexLum(document.getElementById('c1').value),b=hexLum(do
 function doRatio(){const w=+document.getElementById('ra-w').value,h=+document.getElementById('ra-h').value;if(!w||!h)return;const g=gcd(w,h);document.getElementById('ra-o').textContent='النسبة '+(w/g)+':'+(h/g);}
 function copyVal(id){navigator.clipboard.writeText(document.getElementById(id).value);}
 function copyText(t){navigator.clipboard.writeText(t);}
+
+let AI_PIPE=null;
+function initAI(){
+  const box=document.getElementById('ai-box');
+  if(box) box.innerHTML='<div class="text-slate-500">مفيش تسجيل دخول. اسأل عادي.</div>';
+}
+function addAIMsg(who,text){
+  const box=document.getElementById('ai-box');
+  if(!box) return;
+  const mine=who==='أنت';
+  box.innerHTML+='<div class="'+(mine?'text-left':'')+'"><div class="'+(mine?'bg-violet-600/30':'bg-slate-800')+' rounded-2xl px-3 py-2 inline-block max-w-full whitespace-pre-wrap"><b class="text-xs block mb-1">'+(mine?'أنت':'المساعد')+'</b>'+String(text).replace(/</g,'&lt;')+'</div></div>';
+  box.scrollTop=box.scrollHeight;
+}
+function setProg(pct,text,sub){
+  const bar=document.getElementById('ai-bar');
+  const t=document.getElementById('ai-prog-text');
+  const p=document.getElementById('ai-prog-pct');
+  const s=document.getElementById('ai-prog-sub');
+  if(bar) bar.style.width=Math.max(0,Math.min(100,pct))+'%';
+  if(p) p.textContent=Math.round(pct)+'%';
+  if(t&&text) t.textContent=text;
+  if(s&&sub!==undefined) s.textContent=sub;
+}
+function mb(n){return (n/1048576).toFixed(1)+' ميجا';}
+async function loadLocalAI(){
+  if(AI_PIPE){setProg(100,'الموديل جاهز','تقدر تسأل دلوقتي');return AI_PIPE;}
+  if(window._aiLoading) return window._aiLoading;
+  setProg(1,'بيبدأ التحميل','المكتبة + الموديل');
+  window._aiLoading=(async()=>{
+    try{
+      setProg(5,'بيحمّل مكتبة الذكاء','ثواني');
+      const {pipeline}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.1');
+      setProg(12,'بيحمّل الموديل','ممكن ياخد وقت حسب سرعة النت');
+      AI_PIPE=await pipeline('text-generation','onnx-community/Qwen2.5-0.5B-Instruct',{
+        dtype:'q4',
+        progress_callback:(info)=>{
+          const file=(info.file||info.name||'').toString().split('/').pop();
+          if(info.status==='initiate') setProg(15,'بدأ ملف',file);
+          else if(info.status==='progress'||info.status==='download'){
+            const loaded=info.loaded||0, total=info.total||0;
+            const pct=total? (loaded/total)*100 : (info.progress||0);
+            const mapped=15+Math.min(80,pct*0.8);
+            setProg(mapped,'تنزيل: '+file, total? (mb(loaded)+' من '+mb(total)) : 'جاري التحميل');
+          } else if(info.status==='done') setProg(92,'اتحمّل الملف',file);
+          else if(info.status==='ready') setProg(98,'بيجهّز الموديل','لحظات');
+        }
+      });
+      setProg(100,'الموديل جاهز','تقدر تسأل دلوقتي');
+      return AI_PIPE;
+    }catch(e){
+      setProg(0,'فشل التحميل','النِت ضعيف أو الموقع اتحظر. جرّب واي فاي وكروم');
+      window._aiLoading=null;
+      throw e;
+    }
+  })();
+  return window._aiLoading;
+}
+function extractLocal(out){
+  const t=Array.isArray(out)?(out[0].generated_text||out[0].summary_text||''):String(out);
+  if(typeof t==='string'){
+    const parts=t.split('assistant');
+    return (parts.length>1?parts.pop():t).replace(/^[:\s]+/,'').trim();
+  }
+  if(Array.isArray(t)){
+    const last=t[t.length-1];
+    return (last&&last.content)||'تعذر استخراج الرد';
+  }
+  return 'تم التحميل. اسأل تاني.';
+}
+async function askAI(){
+  const el=document.getElementById('ai-q');
+  const q=el.value.trim();
+  if(!q)return;
+  el.value='';
+  addAIMsg('أنت',q);
+  addAIMsg('المساعد','بيفكر...');
+  try{
+    const pipe=await loadLocalAI();
+    const out=await pipe([
+      {role:'system',content:'أنت مساعد دراسي لطلاب الثانوية في مصر. جاوب بالعربي باختصار ووضوح.'},
+      {role:'user',content:q}
+    ],{max_new_tokens:160,temperature:0.6});
+    const box=document.getElementById('ai-box');
+    if(box&&box.lastChild) box.lastChild.remove();
+    addAIMsg('المساعد',extractLocal(out)||'حاول تصيغ السؤال بشكل أبسط.');
+  }catch(err){
+    const box=document.getElementById('ai-box');
+    if(box&&box.lastChild) box.lastChild.remove();
+    addAIMsg('المساعد','المتصفح منع التحميل أو النت ضعيف. جرّب واي فاي واستخدم كروم أو إيدج.');
+  }
+}
 
 const SIGNS=[
 {id:'aries',i:'♈',n:'الحمل',dates:'21 مارس - 19 أبريل',trait:'شجاع ومتحمس وبيبدأ بسرعة. نصحته: ابدأ المهمة من غير مماطلة.'},
